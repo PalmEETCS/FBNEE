@@ -92,8 +92,8 @@
             </div>
         </div>
 
-        <!-- KPI Summary Indicator Cards (ปรับเหลือ 5 คอลัมน์โดยเอา "คนงานรวม" ออก) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- KPI Summary Indicator Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             <!-- Total Tasks -->
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                 <div>
@@ -142,6 +142,16 @@
                 </div>
                 <div class="bg-rose-50 text-rose-600 p-3 rounded-xl">
                     <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <!-- Active Manpower -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">คนงานรวม</p>
+                    <h3 id="stat-workers" class="text-2xl font-bold text-indigo-600 mt-1">0 <span class="text-xs font-normal text-slate-500">คน</span></h3>
+                </div>
+                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl">
+                    <i data-lucide="users" class="w-6 h-6"></i>
                 </div>
             </div>
         </div>
@@ -294,20 +304,20 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">หมวดหมู่งานไฟฟ้า <span class="text-rose-500">*</span></label>
                         <select id="task-category" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">เลือกหมวดหมู่ระบบ</option>
-                            <option value="High Voltage System">High Voltage System</option>
-                            <option value="MDB & Main Distribution">MDB & Main Distribution</option>
-                            <option value="Sub-main & Feeder">Sub-main & Feeder</option>
-                            <option value="Cable Pulling & Termination">Cable Pulling & Termination</option>
-                            <option value="Lighting System">Lighting System</option>
-                            <option value="Receptacle System">Receptacle System</option>
-                            <option value="Earthing & Lightning Protection">Earthing & Lightning Protection</option>
-                            <option value="Fire Alarm System">Fire Alarm System</option>
-                            <option value="Emergency Light and Exit Sign Light System">Emergency Light and Exit Sign Light System</option>
-                            <option value="Public Address System">Public Address System</option>
-                            <option value="CCTV System">CCTV System</option>
-                            <option value="BAS System">BAS System</option>
-                            <option value="Power For Air Conditioner System">Power For Air Conditioner System</option>
+                        <option value="">ทุกหมวดหมู่ระบบ</option>
+                        <option value="High Voltage System">High Voltage System</option>
+                        <option value="MDB & Main Distribution">MDB & Main Distribution</option>
+                        <option value="Sub-main & Feeder">Sub-main & Feeder</option>
+                        <option value="Cable Pulling & Termination">Cable Pulling & Termination</option>
+                        <option value="Lighting System">Lighting System</option>
+                        <option value="Receptacle System">Receptacle System</option>
+                        <option value="Earthing & Lightning Protection">Earthing & Lightning Protection</option>
+                        <option value="Fire Alarm System">Fire Alarm System</option>
+                        <option value="Emergency Light and Exit Sign Light System">Emergency Light and Exit Sign Light System</option>
+                        <option value="Public Address System">Public Address System</option>
+                        <option value="CCTV System">CCTV System</option>
+                        <option value="BAS System">BAS System</option>
+                        <option value="Power For Air Conditioner System">Power For Air Conditioner System</option>
                         </select>
                     </div>
 
@@ -546,12 +556,16 @@
             const inProgress = tasks.filter(t => t.status === 'กำลังดำเนินการ').length;
             const pending = tasks.filter(t => t.status === 'รอเริ่มงาน' || t.status === 'ส่งตรวจงาน').length;
             const delayed = tasks.filter(t => t.status === 'ล่าช้า').length;
+            
+            // Total Active Workers
+            const totalWorkers = tasks.reduce((sum, t) => sum + Number(t.workerCount || 0), 0);
 
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-completed').textContent = completed;
             document.getElementById('stat-progress').textContent = inProgress;
             document.getElementById('stat-pending').textContent = pending;
             document.getElementById('stat-delayed').textContent = delayed;
+            document.getElementById('stat-workers').innerHTML = `${totalWorkers} <span class="text-xs font-normal text-slate-500">คน</span>`;
 
             // Overall Progress Calculation
             let avgProgress = 0;
@@ -890,59 +904,74 @@
             return `${day} ${month} ${year}`;
         }
     </script>
+    <!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแสดงผลแบบเรียลไทม์</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h2 { color: #333; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <h1>ข้อมูลล่าสุด (Real-time)</h1>
+    <div id="data-list">กำลังโหลดข้อมูล...</div>
+
+    <!-- เรียกใช้งาน Firebase SDK ผ่าน CDN -->
     <script type="module">
-    // นำเข้า Firebase SDK จาก CDN
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 1. ค่าคอนฟิกของคุณ (นำมาจาก Firebase Console)
-    const firebaseConfig = {
-        apiKey: "AIzaSyDZKdtzJY-zMOhNcknXW4FWDw1wZYXYLwc",
-        authDomain: "ee-tracking-fbn.firebaseapp.com",
-        projectId: "ee-tracking-fbn",
-        storageBucket: "ee-tracking-fbn.firebasestorage.app",
-        messagingSenderId: "1:514933144137:web:25744b13f2bacdc4e31d98",
-        appId: "YOUR_APP_ID"
-        measurementId: "G-H8PB0FZ0D7"
-    };
+        // ==========================================
+        // นำค่า Config ของคุณมาวางแทนที่ตรงนี้ทั้งหมด
+        // ==========================================
+        const firebaseConfig = {
+     apiKey: "AIzaSyDZKdtzJY-zMOhNcknXW4FWDw1wZYXYLwc",
+     authDomain: "ee-tracking-fbn.firebaseapp.com",
+     projectId: "ee-tracking-fbn",
+     storageBucket: "ee-tracking-fbn.firebasestorage.app",
+     messagingSenderId: "514933144137",
+     appId: "1:514933144137:web:25744b13f2bacdc4e31d98",
+     measurementId: "G-H8PB0FZ0D7"
+        };
 
-    // เริ่มต้นใช้งาน Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        // เริ่มต้นใช้งาน Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    const form = document.getElementById('dataForm');
-    const displayArea = document.getElementById('displayArea');
+        const dataContainer = document.getElementById('data-list');
 
-    // 2. เมื่อกดปุ่มส่งฟอร์ม ให้บันทึกข้อมูลลง Firestore
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('nameInput').value;
-        const message = document.getElementById('messageInput').value;
-
-        try {
-            await addDoc(collection(db, "messages"), {
-                name: name,
-                message: message,
-                createdAt: new Date()
+        // ฟังก์ชันดึงและอัปเดตข้อมูลแบบ Real-time จาก Collection 'messages'
+        onSnapshot(collection(db, "messages"), (snapshot) => {
+            let htmlContent = "";
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                htmlContent += `
+                    <div class="card">
+                        <h2>${data.title || 'ไม่มีหัวข้อ'}</h2>
+                        <p>${data.content || ''}</p>
+                        <small style="color: gray;">เวลา: ${data.time || '-'}</small>
+                    </div>
+                `;
             });
-            form.reset(); // ล้างค่าในฟอร์มหลังส่งเสร็จ
-        } catch (error) {
-            console.error("Error adding document: ", error);
-        }
-    });
 
-    // 3. ดึงข้อมูลและแสดงผลแบบเรียลไทม์ (Real-time updates)
-    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-    onSnapshot(q, (snapshot) => {
-        let html = "";
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            html += `<div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
-                        <strong>${data.name}</strong>: <p>${data.message}</p>
-                     </div>`;
+            if (htmlContent === "") {
+                dataContainer.innerHTML = "<p>ยังไม่มีข้อมูลในระบบ</p>";
+            } else {
+                dataContainer.innerHTML = htmlContent;
+            }
+        }, (error) => {
+            console.error("เกิดข้อผิดพลาด: ", error);
+            dataContainer.innerHTML = "<p style='color: red;'>ไม่สามารถโหลดข้อมูลได้</p>";
         });
-        displayArea.innerHTML = html || "ยังไม่มีข้อมูล";
-    });
-</script>
+    </script>
+
+</body>
+</html>
 </body>
 </html>
